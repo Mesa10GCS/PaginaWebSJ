@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juego - Volkswagen Haxball</title>
+<link rel="stylesheet" href="volkswagen.css">
+<style>
+.pantalla-seleccion {
+  max-width: 800px;
+  margin: 30px auto;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  text-align: center;
+}
+.pantalla-seleccion h2 {
+  color: #0f2260;
+  margin-bottom: 4px;
+}
+.pantalla-seleccion p.sub {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.columnas-seleccion {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+.col-jugador h3 {
+  margin-bottom: 10px;
+}
+.col-jugador.j1 h3 { color: #0f2260; }
+.col-jugador.j2 h3 { color: #0f2260; }
+.opciones-autos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  max-width: 320px;
+}
+.opcion-auto {
+  border: 3px solid transparent;
+  border-radius: 10px;
+  padding: 8px;
+  cursor: pointer;
+  background: #f5f5f5;
+  transition: 0.15s;
+  text-align: center;
+}
+.opcion-auto img {
+  width: 100%;
+  height: 60px;
+  object-fit: contain;
+}
+.opcion-auto span {
+  display: block;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 4px;
+  color: #333;
+}
+.opcion-auto:hover { background: #e8edfb; }
+.opcion-auto.seleccionado.j1 { border-color: #3a7bd5; background: #e8edfb; }
+.opcion-auto.seleccionado.j2 { border-color: #3a7bd5; background: #fbeaea; }
+
+.btn-jugar {
+  margin-top: 24px;
+  background: #0f2260;
+  color: white;
+  border: none;
+  padding: 12px 36px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-jugar:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+
+#zonaJuego { display: none; }
+</style>
+</head>
+<body>
+
+<header class="header">
+<h1>Haxball de Autos</h1>
+<p>Jugador 1: <b>WASD</b> &nbsp;|&nbsp; Jugador 2: <b>Flechas</b> &nbsp;|&nbsp; Empujá la pelota al arco rival</p>
+</header>
+
+<div class="navegador">
+<a href="volkswagen.html">← Volver al catálogo</a>
+</div>
+
+<!-- PANTALLA DE SELECCION -->
+<div class="pantalla-seleccion" id="pantallaSeleccion">
+  <h2>Elegí tu auto</h2>
+  <p class="sub">Cada jugador elige el modelo Volkswagen con el que va a jugar</p>
+
+  <div class="columnas-seleccion">
+    <div class="col-jugador j1">
+      <h3>Jugador 1 (WASD)</h3>
+      <div class="opciones-autos" id="opcionesJ1"></div>
+    </div>
+    <div class="col-jugador j2">
+      <h3> Jugador 2 (Flechas)</h3>
+      <div class="opciones-autos" id="opcionesJ2"></div>
+    </div>
+  </div>
+
+  <button class="btn-jugar" id="btnJugar" disabled onclick="iniciarJuego()">Jugar</button>
+</div>
+
+<!-- ZONA DE JUEGO -->
+<div id="zonaJuego">
+
+<canvas id="juego" width="800" height="450" style="display:block; margin:0 auto; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.3);"></canvas>
+
+<p id="marcador" style="text-align:center; font-size:26px; font-weight:bold; color:#0f2260; margin-top:16px;">🔵 0 — 0 🔴</p>
+<p style="text-align:center; margin-top:8px;">
+  
+
+</div>
+
+<script>
+// ===== CATALOGO DE AUTOS DISPONIBLES =====
+const autosDisponibles = [
+  { nombre: 'Golf GTI',  img: 'https://www.pngmart.com/files/22/Volkswagen-Golf-SV-PNG-Transparent.png' },
+  { nombre: 'Polo GTS',  img: 'https://vwmataderos.com.ar/modelos/polo/gts.png' },
+  { nombre: 'Amarok',    img: 'https://cbredes.s3.us-east-2.amazonaws.com/webred/_red/_vw/images/amarok/menu.webp' },
+  { nombre: 'Saveiro',   img: 'https://cbredes.s3.us-east-2.amazonaws.com/webred/_red/_vw/images/saveiro/menu.webp' },
+  { nombre: 'Vento GLI', img: 'https://cbredes.s3.us-east-2.amazonaws.com/webred/_red/_vw/images/ventogli/menu.webp' },
+  { nombre: 'Virtus',    img: 'https://cbredes.s3.us-east-2.amazonaws.com/webred/_red/_vw/images/virtus/menu.webp' },
+  { nombre: 'Nivus',     img: 'https://cbredes.s3.us-east-2.amazonaws.com/webred/_red/_vw/images/nivus/menu.webp' },
+  { nombre: 'T-Cross',   img: 'https://cbredes.s3.us-east-2.amazonaws.com/webred/_red/_vw/images/tcross/menu.webp' },
+  { nombre: 'Taos',      img: 'https://cbredes.s3.us-east-2.amazonaws.com/webred/_red/_vw/images/taos/menu.webp' },
+  { nombre: 'Polo',      img: 'https://autobahnvw.com.ar/wp-content/uploads/2023/06/polo-track.png' },
+];
+
+let seleccionJ1 = null;
+let seleccionJ2 = null;
+
+function renderOpciones() {
+  const cont1 = document.getElementById('opcionesJ1');
+  const cont2 = document.getElementById('opcionesJ2');
+  cont1.innerHTML = '';
+  cont2.innerHTML = '';
+
+  autosDisponibles.forEach((auto, idx) => {
+    const div1 = document.createElement('div');
+    div1.className = 'opcion-auto';
+    div1.innerHTML = `<img src="${auto.img}" alt="${auto.nombre}"><span>${auto.nombre}</span>`;
+    div1.onclick = () => { seleccionJ1 = idx; renderOpciones(); };
+    if (seleccionJ1 === idx) div1.classList.add('seleccionado', 'j1');
+    cont1.appendChild(div1);
+
+    const div2 = document.createElement('div');
+    div2.className = 'opcion-auto';
+    div2.innerHTML = `<img src="${auto.img}" alt="${auto.nombre}"><span>${auto.nombre}</span>`;
+    div2.onclick = () => { seleccionJ2 = idx; renderOpciones(); };
+    if (seleccionJ2 === idx) div2.classList.add('seleccionado', 'j2');
+    cont2.appendChild(div2);
+  });
+
+  document.getElementById('btnJugar').disabled = !(seleccionJ1 !== null && seleccionJ2 !== null);
+}
+
+renderOpciones();
+
+// ===== JUEGO =====
+const canvas = document.getElementById('juego');
+const ctx = canvas.getContext('2d');
+
+const W = canvas.width;
+const H = canvas.height;
+
+let goles1 = 0, goles2 = 0;
+let teclas = {};
+let imgJ1 = new Image();
+let imgJ2 = new Image();
+let animId = null;
+
+let j1, j2, pelota;
+
+const arcAlto  = H/2 - 70;
+const arcAncho = 14;
+const arcLargo = 140;
+
+document.addEventListener('keydown', function(e) {
+  teclas[e.key] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', function(e) { teclas[e.key] = false; });
+
+function crearEstadoInicial() {
+  j1 = { x: 120,   y: H/2, vx: 0, vy: 0, r: 26, mirar: 1 };
+  j2 = { x: W-120, y: H/2, vx: 0, vy: 0, r: 26, mirar: -1 };
+  pelota = { x: W/2, y: H/2, vx: 3, vy: 2, r: 14 };
+}
+
+function iniciarJuego() {
+  imgJ1.src = autosDisponibles[seleccionJ1].img;
+  imgJ2.src = autosDisponibles[seleccionJ2].img;
+
+  crearEstadoInicial();
+  goles1 = 0; goles2 = 0;
+  actualizarMarcador();
+
+  document.getElementById('pantallaSeleccion').style.display = 'none';
+  document.getElementById('zonaJuego').style.display = 'block';
+
+  if (!animId) loop();
+}
+
+function cambiarAutos() {
+  if (animId) cancelAnimationFrame(animId);
+  animId = null;
+  document.getElementById('zonaJuego').style.display = 'none';
+  document.getElementById('pantallaSeleccion').style.display = 'block';
+}
+
+// Sensibilidad reducida: menos aceleracion y mayor friccion
+function moverJugador(j, izq, der, arri, abaj) {
+  const fric = 0.88;
+  const acel = 1.1;
+  if (teclas[izq])   j.vx -= acel;
+  if (teclas[der])   j.vx += acel;
+  if (teclas[arri])  j.vy -= acel;
+  if (teclas[abaj])  j.vy += acel;
+
+  // limite de velocidad maxima
+  const velMax = 5.5;
+  const vel = Math.sqrt(j.vx*j.vx + j.vy*j.vy);
+  if (vel > velMax) {
+    j.vx = (j.vx / vel) * velMax;
+    j.vy = (j.vy / vel) * velMax;
+  }
+
+  j.vx *= fric;
+  j.vy *= fric;
+  j.x  += j.vx;
+  j.y  += j.vy;
+  if (j.x - j.r < 0)  { j.x = j.r;   j.vx *= -0.5; }
+  if (j.x + j.r > W)  { j.x = W-j.r; j.vx *= -0.5; }
+  if (j.y - j.r < 0)  { j.y = j.r;   j.vy *= -0.5; }
+  if (j.y + j.r > H)  { j.y = H-j.r; j.vy *= -0.5; }
+  // Voltea horizontalmente segun direccion, sin rotar (mantiene el auto derecho)
+  if (j.vx > 0.3) j.mirar = 1;
+  else if (j.vx < -0.3) j.mirar = -1;
+}
+
+function moverPelota() {
+  pelota.x += pelota.vx;
+  pelota.y += pelota.vy;
+  pelota.vx *= 0.987;
+  pelota.vy *= 0.987;
+  if (pelota.y - pelota.r < 0)  { pelota.y = pelota.r;   pelota.vy *= -0.8; }
+  if (pelota.y + pelota.r > H)  { pelota.y = H-pelota.r; pelota.vy *= -0.8; }
+  if (pelota.x - pelota.r < 0) {
+    if (pelota.y > arcAlto && pelota.y < arcAlto + arcLargo) {
+      goles2++; actualizarMarcador(); resetPelota();
+    } else { pelota.x = pelota.r; pelota.vx *= -0.8; }
+  }
+  if (pelota.x + pelota.r > W) {
+    if (pelota.y > arcAlto && pelota.y < arcAlto + arcLargo) {
+      goles1++; actualizarMarcador(); resetPelota();
+    } else { pelota.x = W - pelota.r; pelota.vx *= -0.8; }
+  }
+}
+
+function colision(j, p) {
+  let dx = p.x - j.x, dy = p.y - j.y;
+  let dist = Math.sqrt(dx*dx + dy*dy);
+  let min  = j.r + p.r;
+  if (dist < min && dist > 0) {
+    let nx = dx/dist, ny = dy/dist;
+    p.vx += nx * 6; p.vy += ny * 6;
+    let overlap = min - dist;
+    p.x += nx * overlap; p.y += ny * overlap;
+  }
+}
+
+function resetPelota() {
+  pelota.x = W/2; pelota.y = H/2;
+  pelota.vx = Math.random() > 0.5 ? 3 : -3;
+  pelota.vy = (Math.random() - 0.5) * 4;
+  j1.x = 120;   j1.y = H/2; j1.vx = 0; j1.vy = 0; j1.mirar = 1;
+  j2.x = W-120; j2.y = H/2; j2.vx = 0; j2.vy = 0; j2.mirar = -1;
+}
+
+function actualizarMarcador() {
+  document.getElementById('marcador').innerHTML = ' ' + goles1 + ' — ' + goles2 + ' ';
+}
+
+function reiniciarJuego() {
+  goles1 = 0; goles2 = 0;
+  actualizarMarcador();
+  resetPelota();
+}
+
+function dibujarCancha() {
+  ctx.fillStyle = '#2d8a4e';
+  ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < W; i += 80) {
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(i, 0, 40, H);
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(W/2, H/2, 60, 0, Math.PI*2); ctx.stroke();
+  ctx.fillStyle = 'rgba(58,123,213,0.3)';
+  ctx.fillRect(0, arcAlto, arcAncho, arcLargo);
+  ctx.strokeStyle = '#3a7bd5'; ctx.lineWidth = 3;
+  ctx.strokeRect(0, arcAlto, arcAncho, arcLargo);
+  ctx.fillStyle = 'rgba(231,76,60,0.3)';
+  ctx.fillRect(W - arcAncho, arcAlto, arcAncho, arcLargo);
+  ctx.strokeStyle = '#e74c3c';
+  ctx.strokeRect(W - arcAncho, arcAlto, arcAncho, arcLargo);
+}
+
+function dibujarJugador(j, img) {
+  ctx.save();
+  ctx.translate(j.x, j.y);
+  ctx.scale(j.mirar, 1);
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = 10;
+
+  const w = j.r * 2.6;
+  const h = j.r * 1.8;
+
+  if (img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, -w/2, -h/2, w, h);
+  } else {
+    ctx.fillStyle = '#ccc';
+    ctx.beginPath();
+    ctx.arc(0, 0, j.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function dibujarPelota() {
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(pelota.x, pelota.y, pelota.r, 0, Math.PI*2);
+  ctx.fillStyle = 'white'; ctx.fill();
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#555';
+  ctx.beginPath();
+  ctx.arc(pelota.x - 3, pelota.y - 3, 3, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function loop() {
+  moverJugador(j1, 'a', 'd', 'w', 's');
+  moverJugador(j2, 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown');
+  moverPelota();
+  colision(j1, pelota);
+  colision(j2, pelota);
+  dibujarCancha();
+  dibujarJugador(j1, imgJ1);
+  dibujarJugador(j2, imgJ2);
+  dibujarPelota();
+  animId = requestAnimationFrame(loop);
+}
+</script>
+
+</body>
+</html>
